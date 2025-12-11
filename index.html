@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intercambio Navideño 🎄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5f3f 50%, #8b0000 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: white;
+            font-size: 1em;
+            animation: fall linear infinite;
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        h1 {
+            color: #8b0000;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #2d5f3f;
+            margin-bottom: 25px;
+            font-size: 1em;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            border-left: 5px solid #2d5f3f;
+        }
+
+        .section h2 {
+            color: #2d5f3f;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d5f3f;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #2d5f3f;
+            border-radius: 8px;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #8b0000, #a52a2a);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 0, 0, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .participant-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #2d5f3f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .participant-info {
+            flex: 1;
+        }
+
+        .participant-name {
+            font-weight: bold;
+            color: #1a472a;
+        }
+
+        .participant-family {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .remove-btn {
+            background: #8b0000;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            width: auto;
+        }
+
+        .draw-section {
+            text-align: center;
+        }
+
+        .big-btn {
+            font-size: 1.1em;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #2d5f3f, #1a472a);
+            margin: 10px 0;
+        }
+
+        .result {
+            background: linear-gradient(135deg, #8b0000, #a52a2a);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            animation: fadeIn 0.5s;
+            text-align: center;
+        }
+
+        .result h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .result p {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 120px;
+            margin: 5px;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #8b0000;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .admin-controls {
+            background: #ffebee;
+            border-left: 5px solid #8b0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎄 Intercambio Navideño 🎁</h1>
+        <p class="subtitle">Sorteo familiar de regalos</p>
+
+        <div id="adminSection">
+            <div class="section admin-controls">
+                <h2>⚙️ Configuración (Solo Administrador)</h2>
+                
+                <label>👤 Nombre del participante:</label>
+                <input type="text" id="nameInput" placeholder="Ej: Juan García">
+                
+                <label>👨‍👩‍👧‍👦 Familia:</label>
+                <input type="text" id="familyInput" placeholder="Ej: García">
+                
+                <button onclick="addParticipant()">➕ Agregar Participante</button>
+
+                <div id="participantsList"></div>
+
+                <button class="big-btn" onclick="initializeDraw()" style="margin-top: 20px;">
+                    🎲 Iniciar Sorteo
+                </button>
+
+                <button onclick="resetAll()" style="background: linear-gradient(135deg, #666, #888); margin-top: 10px;">
+                    🔄 Reiniciar Todo
+                </button>
+            </div>
+        </div>
+
+        <div id="drawSection" style="display: none;">
+            <div class="section">
+                <h2>🎁 Descubre tu regalo secreto</h2>
+                
+                <div class="info-box">
+                    ℹ️ Selecciona tu nombre para saber a quién debes regalar
+                </div>
+
+                <label>Selecciona tu nombre:</label>
+                <select id="userSelect">
+                    <option value="">-- Elige tu nombre --</option>
+                </select>
+
+                <button class="big-btn" onclick="revealAssignment()">
+                    🎅 Ver mi Asignación
+                </button>
+
+                <div class="stats" id="stats"></div>
+
+                <div id="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let assignments = {};
+        let revealed = {};
+
+        // Crear copos de nieve
+        function createSnowflakes() {
+            for (let i = 0; i < 25; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.innerHTML = '❅';
+                snowflake.style.left = Math.random() * 100 + '%';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.animationDelay = Math.random() * 5 + 's';
+                snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                document.body.appendChild(snowflake);
+            }
+        }
+
+        createSnowflakes();
+
+        async function loadData() {
+            try {
+                const participantsData = await window.storage.get('participants');
+                const assignmentsData = await window.storage.get('assignments');
+                const revealedData = await window.storage.get('revealed');
+
+                if (participantsData) {
+                    participants = JSON.parse(participantsData.value);
+                    updateParticipantsList();
+                }
+
+                if (assignmentsData) {
+                    assignments = JSON.parse(assignmentsData.value);
+                    revealed = revealedData ? JSON.parse(revealedData.value) : {};
+                    showDrawSection();
+                }
+            } catch (error) {
+                console.log('No hay datos previos guardados');
+            }
+        }
+
+        loadData();
+
+        function addParticipant() {
+            const name = document.getElementById('nameInput').value.trim();
+            const family = document.getElementById('familyInput').value.trim();
+
+            if (!name || !family) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            if (participants.some(p => p.name === name)) {
+                alert('Este participante ya fue agregado');
+                return;
+            }
+
+            participants.push({ name, family });
+            document.getElementById('nameInput').value = '';
+            document.getElementById('familyInput').value = '';
+            
+            updateParticipantsList();
+            saveParticipants();
+        }
+
+        function removeParticipant(name) {
+            participants = participants.filter(p => p.name !== name);
+            updateParticipantsList();
+            saveParticipants();
+        }
+
+        function updateParticipantsList() {
+            const list = document.getElementById('participantsList');
+            
+            if (participants.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+
+            list.innerHTML = `
+                <div class="participants-grid">
+                    ${participants.map(p => `
+                        <div class="participant-card">
+                            <div class="participant-info">
+                                <div class="participant-name">${p.name}</div>
+                                <div class="participant-family">Familia ${p.family}</div>
+                            </div>
+                            <button class="remove-btn" onclick="removeParticipant('${p.name}')">❌</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function saveParticipants() {
+            await window.storage.set('participants', JSON.stringify(participants), true);
+        }
+
+        async function saveAssignments() {
+            await window.storage.set('assignments', JSON.stringify(assignments), true);
+        }
+
+        async function saveRevealed() {
+            await window.storage.set('revealed', JSON.stringify(revealed), true);
+        }
+
+        function initializeDraw() {
+            if (participants.length < 2) {
+                alert('Necesitas al menos 2 participantes');
+                return;
+            }
+
+            assignments = generateAssignments();
+            revealed = {};
+            
+            saveAssignments();
+            saveRevealed();
+            showDrawSection();
+        }
+
+        function generateAssignments() {
+            const result = {};
+            const available = [...participants];
+            
+            for (const giver of participants) {
+                let validReceivers = available.filter(p => 
+                    p.name !== giver.name && p.family !== giver.family
+                );
+
+                if (validReceivers.length === 0) {
+                    alert('No se puede crear un sorteo válido con esta configuración de familias. Intenta reorganizar.');
+                    return null;
+                }
+
+                const randomIndex = Math.floor(Math.random() * validReceivers.length);
+                const receiver = validReceivers[randomIndex];
+                
+                result[giver.name] = receiver.name;
+                available.splice(available.findIndex(p => p.name === receiver.name), 1);
+            }
+
+            return result;
+        }
+
+        function showDrawSection() {
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('drawSection').style.display = 'block';
+
+            const select = document.getElementById('userSelect');
+            select.innerHTML = '<option value="">-- Elige tu nombre --</option>' +
+                participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+
+            updateStats();
+        }
+
+        async function revealAssignment() {
+            const userName = document.getElementById('userSelect').value;
+            
+            if (!userName) {
+                alert('Por favor selecciona tu nombre');
+                return;
+            }
+
+            if (revealed[userName]) {
+                showResult(userName, assignments[userName]);
+                return;
+            }
+
+            revealed[userName] = true;
+            await saveRevealed();
+
+            showResult(userName, assignments[userName]);
+            updateStats();
+        }
+
+        function showResult(giver, receiver) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <div class="result">
+                    <h2>🎉 ${giver} 🎉</h2>
+                    <p>Debes regalarle a:</p>
+                    <p>🎁 ${receiver} 🎁</p>
+                    <p style="font-size: 0.9em; margin-top: 15px;">
+                        ⚠️ Guarda este secreto, ¡es una sorpresa!
+                    </p>
+                </div>
+            `;
+        }
+
+        function updateStats() {
+            const total = participants.length;
+            const revealedCount = Object.keys(revealed).length;
+            const remaining = total - revealedCount;
+
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${total}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${revealedCount}</div>
+                    <div class="stat-label">Revelados</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${remaining}</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
+            `;
+        }
+
+        async function resetAll() {
+            if (!confirm('¿Estás seguro? Esto borrará todo el sorteo actual')) {
+                return;
+            }
+
+            participants = [];
+            assignments = {};
+            revealed = {};
+
+            await window.storage.delete('participants', true);
+            await window.storage.delete('assignments', true);
+            await window.storage.delete('revealed', true);
+
+            document.getElementById('adminSection').style.display = 'block';
+            document.getElementById('drawSection').style.display = 'none';
+            updateParticipantsList();
+        }
+    </script>
+</body>
+</html>
