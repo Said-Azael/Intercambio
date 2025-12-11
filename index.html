@@ -67,6 +67,13 @@
             font-size: 1em;
         }
 
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #2d5f3f;
+            font-size: 1.2em;
+        }
+
         .section {
             margin-bottom: 25px;
             padding: 20px;
@@ -247,6 +254,11 @@
             background: #ffebee;
             border-left: 5px solid #8b0000;
         }
+
+        .password-section {
+            background: #e8f5e9;
+            border-left: 5px solid #2d5f3f;
+        }
     </style>
 </head>
 <body>
@@ -254,7 +266,20 @@
         <h1>🎄 Intercambio Navideño 🎁</h1>
         <p class="subtitle">Sorteo familiar de regalos</p>
 
-        <div id="adminSection">
+        <div id="loadingDiv" class="loading">
+            ⏳ Cargando datos...
+        </div>
+
+        <div id="passwordSection" style="display: none;">
+            <div class="section password-section">
+                <h2>🔐 Acceso de Administrador</h2>
+                <label>Contraseña de administrador:</label>
+                <input type="password" id="adminPassword" placeholder="Ingresa la contraseña">
+                <button onclick="checkAdminPassword()">🔓 Acceder</button>
+            </div>
+        </div>
+
+        <div id="adminSection" style="display: none;">
             <div class="section admin-controls">
                 <h2>⚙️ Configuración (Solo Administrador)</h2>
                 
@@ -298,16 +323,53 @@
                 <div class="stats" id="stats"></div>
 
                 <div id="result"></div>
+
+                <button onclick="showAdminAccess()" style="background: linear-gradient(135deg, #666, #888); margin-top: 20px; font-size: 0.85em;">
+                    ⚙️ Acceso de Administrador
+                </button>
             </div>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBY8kHkoCosUtpMeWjq-rcD4cr9WI3WPZY",
+            authDomain: "intercambio-navidad-abc12.firebaseapp.com",
+            databaseURL: "https://intercambio-navidad-abc12-default-rtdb.firebaseio.com",
+            projectId: "intercambio-navidad-abc12",
+            storageBucket: "intercambio-navidad-abc12.firebasestorage.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const ADMIN_PASSWORD = "navidad2024";
+
         let participants = [];
         let assignments = {};
         let revealed = {};
+        let isAdmin = false;
 
-        // Crear copos de nieve
+        window.checkAdminPassword = function() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                document.getElementById('passwordSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+                document.getElementById('drawSection').style.display = 'none';
+            } else {
+                alert('❌ Contraseña incorrecta');
+            }
+        };
+
+        window.showAdminAccess = function() {
+            document.getElementById('drawSection').style.display = 'none';
+            document.getElementById('passwordSection').style.display = 'block';
+        };
+
         function createSnowflakes() {
             for (let i = 0; i < 25; i++) {
                 const snowflake = document.createElement('div');
@@ -325,28 +387,51 @@
 
         async function loadData() {
             try {
-                const participantsData = await window.storage.get('participants');
-                const assignmentsData = await window.storage.get('assignments');
-                const revealedData = await window.storage.get('revealed');
+                const snapshot = await get(ref(database, 'intercambio'));
+                const data = snapshot.val();
 
-                if (participantsData) {
-                    participants = JSON.parse(participantsData.value);
-                    updateParticipantsList();
+                if (data) {
+                    participants = data.participants || [];
+                    assignments = data.assignments || {};
+                    revealed = data.revealed || {};
+
+                    if (Object.keys(assignments).length > 0) {
+                        showDrawSection();
+                    } else {
+                        document.getElementById('passwordSection').style.display = 'block';
+                    }
+                } else {
+                    document.getElementById('passwordSection').style.display = 'block';
                 }
 
-                if (assignmentsData) {
-                    assignments = JSON.parse(assignmentsData.value);
-                    revealed = revealedData ? JSON.parse(revealedData.value) : {};
-                    showDrawSection();
-                }
+                document.getElementById('loadingDiv').style.display = 'none';
             } catch (error) {
-                console.log('No hay datos previos guardados');
+                console.error('Error cargando datos:', error);
+                document.getElementById('loadingDiv').innerHTML = '❌ Error al cargar. Recarga la página.';
             }
         }
 
+        onValue(ref(database, 'intercambio'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                participants = data.participants || [];
+                assignments = data.assignments || {};
+                revealed = data.revealed || {};
+
+                if (isAdmin) {
+                    updateParticipantsList();
+                }
+
+                if (Object.keys(assignments).length > 0 && document.getElementById('drawSection').style.display === 'block') {
+                    updateUserSelect();
+                    updateStats();
+                }
+            }
+        });
+
         loadData();
 
-        function addParticipant() {
+        window.addParticipant = async function() {
             const name = document.getElementById('nameInput').value.trim();
             const family = document.getElementById('familyInput').value.trim();
 
@@ -364,15 +449,13 @@
             document.getElementById('nameInput').value = '';
             document.getElementById('familyInput').value = '';
             
-            updateParticipantsList();
-            saveParticipants();
-        }
+            await saveData();
+        };
 
-        function removeParticipant(name) {
+        window.removeParticipant = async function(name) {
             participants = participants.filter(p => p.name !== name);
-            updateParticipantsList();
-            saveParticipants();
-        }
+            await saveData();
+        };
 
         function updateParticipantsList() {
             const list = document.getElementById('participantsList');
@@ -397,31 +480,36 @@
             `;
         }
 
-        async function saveParticipants() {
-            await window.storage.set('participants', JSON.stringify(participants), true);
+        async function saveData() {
+            try {
+                await set(ref(database, 'intercambio'), {
+                    participants,
+                    assignments,
+                    revealed
+                });
+                updateParticipantsList();
+            } catch (error) {
+                console.error('Error guardando:', error);
+                alert('Error al guardar. Intenta de nuevo.');
+            }
         }
 
-        async function saveAssignments() {
-            await window.storage.set('assignments', JSON.stringify(assignments), true);
-        }
-
-        async function saveRevealed() {
-            await window.storage.set('revealed', JSON.stringify(revealed), true);
-        }
-
-        function initializeDraw() {
+        window.initializeDraw = async function() {
             if (participants.length < 2) {
                 alert('Necesitas al menos 2 participantes');
                 return;
             }
 
-            assignments = generateAssignments();
+            const newAssignments = generateAssignments();
+            if (!newAssignments) return;
+
+            assignments = newAssignments;
             revealed = {};
             
-            saveAssignments();
-            saveRevealed();
+            await saveData();
+            isAdmin = false;
             showDrawSection();
-        }
+        };
 
         function generateAssignments() {
             const result = {};
@@ -448,17 +536,22 @@
         }
 
         function showDrawSection() {
+            document.getElementById('loadingDiv').style.display = 'none';
             document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('passwordSection').style.display = 'none';
             document.getElementById('drawSection').style.display = 'block';
 
-            const select = document.getElementById('userSelect');
-            select.innerHTML = '<option value="">-- Elige tu nombre --</option>' +
-                participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-
+            updateUserSelect();
             updateStats();
         }
 
-        async function revealAssignment() {
+        function updateUserSelect() {
+            const select = document.getElementById('userSelect');
+            select.innerHTML = '<option value="">-- Elige tu nombre --</option>' +
+                participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        }
+
+        window.revealAssignment = async function() {
             const userName = document.getElementById('userSelect').value;
             
             if (!userName) {
@@ -466,17 +559,13 @@
                 return;
             }
 
-            if (revealed[userName]) {
-                showResult(userName, assignments[userName]);
-                return;
+            if (!revealed[userName]) {
+                revealed[userName] = true;
+                await saveData();
             }
 
-            revealed[userName] = true;
-            await saveRevealed();
-
             showResult(userName, assignments[userName]);
-            updateStats();
-        }
+        };
 
         function showResult(giver, receiver) {
             const resultDiv = document.getElementById('result');
@@ -513,23 +602,24 @@
             `;
         }
 
-        async function resetAll() {
+        window.resetAll = async function() {
             if (!confirm('¿Estás seguro? Esto borrará todo el sorteo actual')) {
                 return;
             }
 
-            participants = [];
-            assignments = {};
-            revealed = {};
-
-            await window.storage.delete('participants', true);
-            await window.storage.delete('assignments', true);
-            await window.storage.delete('revealed', true);
-
-            document.getElementById('adminSection').style.display = 'block';
-            document.getElementById('drawSection').style.display = 'none';
-            updateParticipantsList();
-        }
+            try {
+                await remove(ref(database, 'intercambio'));
+                participants = [];
+                assignments = {};
+                revealed = {};
+                isAdmin = true;
+                updateParticipantsList();
+                alert('✅ Sorteo reiniciado correctamente');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al reiniciar');
+            }
+        };
     </script>
 </body>
 </html>
