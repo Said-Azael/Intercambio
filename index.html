@@ -171,6 +171,71 @@
             width: auto;
         }
 
+        /* Estilo de tarjetas para seleccionar nombres */
+        .name-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .name-card {
+            background: linear-gradient(135deg, #ffffff, #f0f0f0);
+            border: 3px solid #2d5f3f;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .name-card::before {
+            content: '🎁';
+            position: absolute;
+            font-size: 3em;
+            opacity: 0.1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .name-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 15px rgba(139, 0, 0, 0.3);
+            border-color: #8b0000;
+            background: linear-gradient(135deg, #fff3cd, #ffe8a1);
+        }
+
+        .name-card.revealed {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border-color: #28a745;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .name-card.revealed:hover {
+            transform: none;
+        }
+
+        .name-card-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1a472a;
+            position: relative;
+            z-index: 1;
+        }
+
+        .name-card-status {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
         .draw-section {
             text-align: center;
         }
@@ -259,6 +324,30 @@
             background: #e8f5e9;
             border-left: 5px solid #2d5f3f;
         }
+
+        .admin-results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .admin-result-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2d5f3f;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-result-arrow {
+            color: #8b0000;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -308,17 +397,10 @@
                 <h2>🎁 Descubre tu regalo secreto</h2>
                 
                 <div class="info-box">
-                    ℹ️ Selecciona tu nombre para saber a quién debes regalar
+                    ℹ️ Haz clic en tu nombre para descubrir a quién debes regalar
                 </div>
 
-                <label>Selecciona tu nombre:</label>
-                <select id="userSelect">
-                    <option value="">-- Elige tu nombre --</option>
-                </select>
-
-                <button class="big-btn" onclick="revealAssignment()">
-                    🎅 Ver mi Asignación
-                </button>
+                <div class="name-cards" id="nameCards"></div>
 
                 <div class="stats" id="stats"></div>
 
@@ -326,6 +408,17 @@
 
                 <button onclick="showAdminAccess()" style="background: linear-gradient(135deg, #666, #888); margin-top: 20px; font-size: 0.85em;">
                     ⚙️ Acceso de Administrador
+                </button>
+            </div>
+        </div>
+
+        <div id="adminResultsSection" style="display: none;">
+            <div class="section admin-controls">
+                <h2>📊 Resultados del Sorteo (Admin)</h2>
+                <div id="adminResultsList" class="admin-results"></div>
+                
+                <button onclick="backToConfig()" style="margin-top: 20px;">
+                    ← Volver a Configuración
                 </button>
             </div>
         </div>
@@ -358,8 +451,13 @@
             if (password === ADMIN_PASSWORD) {
                 isAdmin = true;
                 document.getElementById('passwordSection').style.display = 'none';
-                document.getElementById('adminSection').style.display = 'block';
                 document.getElementById('drawSection').style.display = 'none';
+                
+                if (Object.keys(assignments).length > 0) {
+                    showAdminResults();
+                } else {
+                    document.getElementById('adminSection').style.display = 'block';
+                }
             } else {
                 alert('❌ Contraseña incorrecta');
             }
@@ -368,6 +466,12 @@
         window.showAdminAccess = function() {
             document.getElementById('drawSection').style.display = 'none';
             document.getElementById('passwordSection').style.display = 'block';
+        };
+
+        window.backToConfig = function() {
+            document.getElementById('adminResultsSection').style.display = 'none';
+            document.getElementById('adminSection').style.display = 'block';
+            updateParticipantsList();
         };
 
         function createSnowflakes() {
@@ -420,10 +524,13 @@
 
                 if (isAdmin) {
                     updateParticipantsList();
+                    if (document.getElementById('adminResultsSection').style.display === 'block') {
+                        updateAdminResults();
+                    }
                 }
 
                 if (Object.keys(assignments).length > 0 && document.getElementById('drawSection').style.display === 'block') {
-                    updateUserSelect();
+                    updateNameCards();
                     updateStats();
                 }
             }
@@ -507,8 +614,7 @@
             revealed = {};
             
             await saveData();
-            isAdmin = false;
-            showDrawSection();
+            showAdminResults();
         };
 
         function generateAssignments() {
@@ -535,36 +641,61 @@
             return result;
         }
 
+        function showAdminResults() {
+            document.getElementById('loadingDiv').style.display = 'none';
+            document.getElementById('adminSection').style.display = 'none';
+            document.getElementById('passwordSection').style.display = 'none';
+            document.getElementById('drawSection').style.display = 'none';
+            document.getElementById('adminResultsSection').style.display = 'block';
+            updateAdminResults();
+        }
+
+        function updateAdminResults() {
+            const list = document.getElementById('adminResultsList');
+            list.innerHTML = Object.keys(assignments).map(giver => `
+                <div class="admin-result-item">
+                    <span><strong>${giver}</strong></span>
+                    <span class="admin-result-arrow">→</span>
+                    <span><strong>${assignments[giver]}</strong></span>
+                    <span style="color: ${revealed[giver] ? '#28a745' : '#999'};">
+                        ${revealed[giver] ? '✓ Visto' : '○ Pendiente'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
         function showDrawSection() {
             document.getElementById('loadingDiv').style.display = 'none';
             document.getElementById('adminSection').style.display = 'none';
             document.getElementById('passwordSection').style.display = 'none';
+            document.getElementById('adminResultsSection').style.display = 'none';
             document.getElementById('drawSection').style.display = 'block';
 
-            updateUserSelect();
+            updateNameCards();
             updateStats();
         }
 
-        function updateUserSelect() {
-            const select = document.getElementById('userSelect');
-            select.innerHTML = '<option value="">-- Elige tu nombre --</option>' +
-                participants.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        function updateNameCards() {
+            const container = document.getElementById('nameCards');
+            container.innerHTML = participants.map(p => `
+                <div class="name-card ${revealed[p.name] ? 'revealed' : ''}" 
+                     onclick="${revealed[p.name] ? '' : `selectName('${p.name}')`}">
+                    <div class="name-card-name">${p.name}</div>
+                    <div class="name-card-status">
+                        ${revealed[p.name] ? '✓ Ya visto' : 'Click aquí'}
+                    </div>
+                </div>
+            `).join('');
         }
 
-        window.revealAssignment = async function() {
-            const userName = document.getElementById('userSelect').value;
-            
-            if (!userName) {
-                alert('Por favor selecciona tu nombre');
-                return;
-            }
-
+        window.selectName = async function(userName) {
             if (!revealed[userName]) {
                 revealed[userName] = true;
                 await saveData();
             }
 
             showResult(userName, assignments[userName]);
+            updateNameCards();
         };
 
         function showResult(giver, receiver) {
@@ -613,6 +744,8 @@
                 assignments = {};
                 revealed = {};
                 isAdmin = true;
+                document.getElementById('adminResultsSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
                 updateParticipantsList();
                 alert('✅ Sorteo reiniciado correctamente');
             } catch (error) {
